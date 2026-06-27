@@ -28,13 +28,9 @@ export default function Onboarding() {
   const [pic, setPic] = useState<string | null>(user?.profile_pic || pickRandomAvatar());
   const [loading, setLoading] = useState(false);
 
-  const randomize = async () => {
+  const randomizeAvatar = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
-    try {
-      const res = await api.get("/profile/randomize");
-      setAnonName(res.anon_username);
-      setPic(pickRandomAvatar(pic));
-    } catch {}
+    setPic(pickRandomAvatar(pic));
   };
 
   const pickFromGallery = async () => {
@@ -105,12 +101,12 @@ export default function Onboarding() {
             {anonName}
           </Text>
           <Pressable
-            testID="onboarding-randomize-btn"
+            testID="onboarding-shuffle-avatar-btn"
             style={({ pressed }) => [styles.randomBtn, pressed && { opacity: 0.85 }]}
-            onPress={randomize}
+            onPress={randomizeAvatar}
           >
-            <Ionicons name="shuffle" size={18} color={colors.onSurface} />
-            <Text style={styles.randomText}>Shuffle name + avatar</Text>
+            <Ionicons name="shuffle" size={18} color={colors.onBrandSecondary} />
+            <Text style={styles.randomText}>Shuffle avatar</Text>
           </Pressable>
         </View>
 

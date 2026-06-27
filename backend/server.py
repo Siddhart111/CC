@@ -636,21 +636,23 @@ async def startup():
     await db.chats.create_index("chat_id", unique=True)
     await db.confessions.create_index("confession_id", unique=True)
     await db.confessions.create_index([("college_id", 1), ("created_at", -1)])
-    # seed UPES Lounge
+    # seed UPES Lounge (idempotent rename: ensure title is short college code, e.g. "UPES")
     for c in COLLEGES:
-        existing = await db.chats.find_one({"chat_id": c["lounge_id"]}, {"_id": 0})
-        if not existing:
-            await db.chats.insert_one(
-                {
+        await db.chats.update_one(
+            {"chat_id": c["lounge_id"]},
+            {
+                "$set": {
                     "chat_id": c["lounge_id"],
                     "type": "group",
                     "college_id": c["college_id"],
-                    "title": f"{c['short']} Lounge",
-                    "description": f"The official anonymous lounge for {c['name']} students.",
+                    "title": c["short"],
+                    "description": f"The official anonymous space for {c['name']} students.",
                     "cover": "https://images.unsplash.com/photo-1517256673644-36ad11246d21",
-                    "created_at": now_utc().isoformat(),
-                }
-            )
+                },
+                "$setOnInsert": {"created_at": now_utc().isoformat()},
+            },
+            upsert=True,
+        )
     logger.info("Campus Chat backend ready.")
 
 

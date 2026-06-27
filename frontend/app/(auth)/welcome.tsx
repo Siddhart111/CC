@@ -8,7 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 const CC_LOGO = require("../../assets/cc-logo.png");
-const WELCOME_HERO = "https://images.unsplash.com/photo-1513906029980-32d13afe6d8c?w=1200&q=80";
+const WELCOME_HERO = "https://customer-assets.emergentagent.com/job_college-hub-chat/artifacts/1b1s4yv1_image.webp";
 
 export default function Welcome() {
   const router = useRouter();

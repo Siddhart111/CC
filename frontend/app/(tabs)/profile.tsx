@@ -22,17 +22,6 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const shuffleName = async () => {
-    setSaving(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
-    try {
-      const r = await api.get("/profile/randomize");
-      const updated = await api.patch("/profile", { anon_username: r.anon_username });
-      setUser(updated);
-    } catch {}
-    setSaving(false);
-  };
-
   const shufflePic = async () => {
     setSaving(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -75,7 +64,7 @@ export default function Profile() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <View style={styles.coverWrap}>
           <Image
-            source={{ uri: "https://images.unsplash.com/photo-1513906029980-32d13afe6d8c?w=1200&q=80" }}
+            source={{ uri: "https://customer-assets.emergentagent.com/job_college-hub-chat/artifacts/1b1s4yv1_image.webp" }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
           />
@@ -118,13 +107,6 @@ export default function Profile() {
             color={colors.brandSecondary}
             onPress={shufflePic}
             testID="profile-shuffle-pic"
-          />
-          <ActionTile
-            icon="shuffle"
-            label="Shuffle name"
-            color={colors.brandTertiary}
-            onPress={shuffleName}
-            testID="profile-shuffle-name"
           />
         </View>
 
