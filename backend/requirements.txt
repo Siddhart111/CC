@@ -1,4 +1,4 @@
---find-links https://pypi.emergentmethods.ai/simple/emergentintegrations/
+
 aiohappyeyeballs==2.6.2
 aiohttp==3.14.1
 aiosignal==1.4.0
@@ -19,7 +19,7 @@ cryptography==49.0.0
 distro==1.9.0
 dnspython==2.8.0
 ecdsa==0.19.2
-emergentintegrations==0.2.0
+emergentintegrations @ https://customer-assets.emergentagent.com/internal-asset/library/emergentintegrations-0.2.0-py3-none-any.whl
 email-validator==2.3.0
 fastapi==0.110.1
 fastuuid==0.14.0
