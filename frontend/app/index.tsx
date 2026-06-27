@@ -54,16 +54,16 @@ export default function Index() {
 
   return (
     <View style={styles.container} testID="splash-screen">
-      {/* Subtle radial-ish backdrop via two stacked gradients */}
+      {/* Subtle radial vignette using two stacked gradients */}
       <LinearGradient
-        colors={["#1A0E2A", BG, BG]}
-        locations={[0, 0.55, 1]}
+        colors={["#160826", "#000000", "#000000"]}
+        locations={[0, 0.6, 1]}
         style={StyleSheet.absoluteFill}
       />
       <LinearGradient
-        colors={[`${ACCENT}22`, "transparent"]}
-        start={{ x: 0.5, y: 0.4 }}
-        end={{ x: 0.5, y: 0.9 }}
+        colors={["transparent", `${ACCENT}1A`, "transparent"]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
         style={StyleSheet.absoluteFill}
       />
 
@@ -143,16 +143,16 @@ const styles = StyleSheet.create({
   logoWrap: { alignItems: "center", justifyContent: "center" },
   glow: {
     position: "absolute",
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
     backgroundColor: GLOW,
     shadowColor: ACCENT,
     shadowOpacity: 1,
-    shadowRadius: 60,
+    shadowRadius: 90,
     shadowOffset: { width: 0, height: 0 },
   },
-  logo: { width: 220, height: 130 },
+  logo: { width: 280, height: 160 },
   title: {
     fontSize: 32,
     fontWeight: "800",
@@ -187,4 +187,6 @@ const dotStyles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: ACCENT,
   },
+});
+
 });
