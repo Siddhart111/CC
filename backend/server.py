@@ -28,7 +28,7 @@ DB_NAME = os.environ["DB_NAME"]
 JWT_SECRET = os.environ.get("JWT_SECRET", "campus-chat-dev-secret-change-me")
 JWT_ALGO = "HS256"
 JWT_TTL_DAYS = 30
-BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+SMTP_USER = os.environ.get("SMTP_USER", "")
 RESEND_FROM = os.environ.get("RESEND_FROM", "Campus Chat <onboarding@resend.dev>")
 OTP_TTL_MIN = 10
 OTP_RESEND_COOLDOWN_SEC = 60
@@ -202,37 +202,31 @@ ws_manager = WSManager()
 
 
 # --- Resend email helper ---
+# --- Gmail SMTP email helper ---
 def send_email_resend(to_email: str, subject: str, html: str, text: str) -> bool:
-    if not BREVO_API_KEY:
-        logger.warning(f"[DEV] No BREVO_API_KEY set. Would have sent to {to_email}: {subject}")
-        return False
-    body = pyjson.dumps({
-        "sender": {"name": "Campus Chat", "email": "gamersiddhart@gmail.com"},
-        "to": [{"email": to_email}],
-        "subject": subject,
-        "htmlContent": html,
-        "textContent": text
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        "https://api.brevo.com/v3/smtp/email",
-        data=body,
-        headers={
-            "api-key": BREVO_API_KEY,
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return 200 <= resp.status < 300
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = os.environ.get("SMTP_USER")
+        msg["To"] = to_email
+        msg.attach(MIMEText(text, "plain"))
+        msg.attach(MIMEText(html, "html"))
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASS"))
+            server.sendmail(os.environ.get("SMTP_USER"), to_email, msg.as_string())
+        return True
     except Exception as e:
-        logger.error(f"Brevo send failed for {to_email}: {e}")
+        logger.error(f"SMTP send failed for {to_email}: {e}")
         return False
     """Send an email via Resend HTTP API. Returns True on success, False otherwise.
-    If BREVO_API_KEY is not configured, logs the message and returns False so callers
+    If SMTP_USER is not configured, logs the message and returns False so callers
     can fall back to dev mode (returning the OTP in the response)."""
-    if not BREVO_API_KEY:
-        logger.warning(f"[DEV] No BREVO_API_KEY set. Would have sent to {to_email}: {subject}")
+    if not SMTP_USER:
+        logger.warning(f"[DEV] No SMTP_USER set. Would have sent to {to_email}: {subject}")
         return False
     body = pyjson.dumps(
         {"from": RESEND_FROM, "to": [to_email], "subject": subject, "html": html, "text": text}
@@ -241,7 +235,7 @@ def send_email_resend(to_email: str, subject: str, html: str, text: str) -> bool
         "https://api.resend.com/emails",
         data=body,
         headers={
-            "Authorization": f"Bearer {BREVO_API_KEY}",
+            "Authorization": f"Bearer {SMTP_USER}",
             "Content-Type": "application/json",
         },
         method="POST",
