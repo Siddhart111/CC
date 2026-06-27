@@ -28,7 +28,7 @@ DB_NAME = os.environ["DB_NAME"]
 JWT_SECRET = os.environ.get("JWT_SECRET", "campus-chat-dev-secret-change-me")
 JWT_ALGO = "HS256"
 JWT_TTL_DAYS = 30
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 RESEND_FROM = os.environ.get("RESEND_FROM", "Campus Chat <onboarding@resend.dev>")
 OTP_TTL_MIN = 10
 OTP_RESEND_COOLDOWN_SEC = 60
@@ -203,11 +203,36 @@ ws_manager = WSManager()
 
 # --- Resend email helper ---
 def send_email_resend(to_email: str, subject: str, html: str, text: str) -> bool:
+    if not BREVO_API_KEY:
+        logger.warning(f"[DEV] No BREVO_API_KEY set. Would have sent to {to_email}: {subject}")
+        return False
+    body = pyjson.dumps({
+        "sender": {"name": "Campus Chat", "email": "gamersiddhart@gmail.com"},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html,
+        "textContent": text
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=body,
+        headers={
+            "api-key": BREVO_API_KEY,
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return 200 <= resp.status < 300
+    except Exception as e:
+        logger.error(f"Brevo send failed for {to_email}: {e}")
+        return False
     """Send an email via Resend HTTP API. Returns True on success, False otherwise.
-    If RESEND_API_KEY is not configured, logs the message and returns False so callers
+    If BREVO_API_KEY is not configured, logs the message and returns False so callers
     can fall back to dev mode (returning the OTP in the response)."""
-    if not RESEND_API_KEY:
-        logger.warning(f"[DEV] No RESEND_API_KEY set. Would have sent to {to_email}: {subject}")
+    if not BREVO_API_KEY:
+        logger.warning(f"[DEV] No BREVO_API_KEY set. Would have sent to {to_email}: {subject}")
         return False
     body = pyjson.dumps(
         {"from": RESEND_FROM, "to": [to_email], "subject": subject, "html": html, "text": text}
@@ -216,7 +241,7 @@ def send_email_resend(to_email: str, subject: str, html: str, text: str) -> bool
         "https://api.resend.com/emails",
         data=body,
         headers={
-            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Authorization": f"Bearer {BREVO_API_KEY}",
             "Content-Type": "application/json",
         },
         method="POST",
