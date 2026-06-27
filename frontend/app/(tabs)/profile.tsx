@@ -22,16 +22,6 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const shufflePic = async () => {
-    setSaving(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const updated = await api.patch("/profile", { profile_pic: pickRandomAvatar(user.profile_pic) });
-      setUser(updated);
-    } catch {}
-    setSaving(false);
-  };
-
   const uploadPic = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
@@ -62,19 +52,6 @@ export default function Profile() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]} testID="profile-screen">
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <View style={styles.coverWrap}>
-          <Image
-            source={{ uri: "https://customer-assets.emergentagent.com/job_college-hub-chat/artifacts/1b1s4yv1_image.webp" }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-          />
-          <LinearGradient
-            colors={["rgba(0,0,0,0)", "rgba(253,252,248,0.95)", colors.surface]}
-            locations={[0, 0.7, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
-
         <View style={styles.avatarWrap}>
           {user.profile_pic ? (
             <Image source={{ uri: user.profile_pic }} style={styles.avatar} contentFit="cover" />
@@ -126,7 +103,7 @@ export default function Profile() {
             <Text style={styles.cardLabel}>Status</Text>
             <View style={styles.statusDot}>
               <View style={styles.dotGreen} />
-              <Text style={styles.cardValue}>Online</Text>
+              <Text style={styles.cardValue} numberOfLines={1}>Online</Text>
             </View>
           </View>
         </View>
@@ -210,7 +187,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   coverWrap: { height: 180, width: "100%", overflow: "hidden" },
   avatarWrap: {
     alignSelf: "center",
-    marginTop: -64,
+    marginTop: spacing.xxl,
     padding: 6,
     borderRadius: 999,
     backgroundColor: colors.surface,
