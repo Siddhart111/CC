@@ -78,4 +78,8 @@ export const radius = {
   pill: 999,
 };
 
+// Re-exported for convenience. The cycle warning is harmless because
+// theme-context only reads named exports (lightColors/darkColors/ColorScheme)
+// after both modules have finished evaluating their constants.
 export { useTheme } from "./theme-context";
+

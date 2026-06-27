@@ -18,14 +18,20 @@ Anonymous, college-only chat. Students verify with their UPES college email, get
 6. **Discover** — search/list other anonymous students in your college
 7. **Realtime chat** — WS broadcasts new messages to all chat members instantly
 
-## Out of scope (for v1)
-- Push notifications (intended for later, requires native build)
-- Multiple colleges (only UPES for now; backend supports adding more via COLLEGES list)
-- Voice / image messages
-- Block / report flow
-- Group creation by users (only seeded campus lounge for now)
+## Confessions Wall (v2)
+- New `Wall` bottom-tab — anonymous, one-to-many, college-scoped board with **no replies**.
+- Each post gets a rotating disguise mask (e.g. `Anon Falcon`) and accent color — different from the user's main handle so confessions can't be linked back.
+- Backend stores `author_id` privately for moderation/deletion but never returns it in any response.
+- Endpoints: `POST/GET /api/confessions`, `POST /api/confessions/{id}/heart` (toggle), `DELETE /api/confessions/{id}` (author only).
+- Sort modes: `new` (default, recency) and `hot` (heart count then recency).
+- Mood tags: lol · spicy · tea · love · vent · wholesome.
 
-## Design
-- Personality: "Tactile / Playful Light" — warm oat surface, coral / marigold / mint accents
-- Bottom-tab navigation: Chats · Discover · Friends · Profile
-- Chunky rounded buttons (pill), 56pt list rows, glass-style sticky headers
+## Dark Theme (v2)
+- Full app-wide dark theme; toggle lives in **Profile → Appearance**.
+- Defaults to **system** colour scheme; manual choice persists in storage (`cc_theme_mode`).
+- Implemented via `ThemeProvider` + `useTheme()`; every screen rebuilds styles via `makeStyles(colors)`.
+
+## Credit
+- "Created by Siddharth Nishad" appears on the Welcome screen and at the bottom of the Profile screen.
+
+## Out of scope (for v1)
