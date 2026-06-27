@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth-context";
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 type College = {
   college_id: string;
@@ -30,6 +30,8 @@ type College = {
 export default function Signup() {
   const router = useRouter();
   const { signup } = useAuth();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [colleges, setColleges] = useState<College[]>([]);
   const [collegeId, setCollegeId] = useState<string>("");
   const [email, setEmail] = useState("");
@@ -232,6 +234,8 @@ function Field({
   hint?: string;
   children: React.ReactNode;
 }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={{ gap: spacing.xs }}>
       <Text style={styles.label}>{label}</Text>
@@ -241,7 +245,7 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.xl },
   backBtn: {

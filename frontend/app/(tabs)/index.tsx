@@ -16,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth-context";
 import { colorForName } from "@/src/lib/avatars";
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { spacing, useTheme } from "@/src/lib/theme";
 
 type ChatRow = {
   chat_id: string;
@@ -42,6 +42,8 @@ function timeAgo(iso?: string) {
 export default function ChatsList() {
   const router = useRouter();
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [chats, setChats] = useState<ChatRow[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -112,6 +114,8 @@ export default function ChatsList() {
 }
 
 function ChatItem({ item, onPress }: { item: ChatRow; onPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const isGroup = item.type === "group";
   const title = item.title ?? (isGroup ? "Group" : "Chat");
   return (
@@ -159,7 +163,7 @@ function ChatItem({ item, onPress }: { item: ChatRow; onPress: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   header: {
     flexDirection: "row",

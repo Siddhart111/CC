@@ -11,11 +11,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth-context";
 import { colorForName, pickRandomAvatar } from "@/src/lib/avatars";
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 export default function Profile() {
   const router = useRouter();
   const { user, setUser, logout } = useAuth();
+  const { colors, effective, toggle } = useTheme();
+  const styles = makeStyles(colors);
   const [saving, setSaving] = useState(false);
 
   if (!user) return null;
@@ -148,6 +150,28 @@ export default function Profile() {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.cardKicker}>Appearance</Text>
+          <Pressable
+            testID="profile-theme-toggle"
+            onPress={async () => {
+              await toggle();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            style={styles.cardRow}
+          >
+            <Text style={styles.cardLabel}>Dark mode</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text style={styles.cardValue}>{effective === "dark" ? "On" : "Off"}</Text>
+              <Ionicons
+                name={effective === "dark" ? "moon" : "sunny"}
+                size={20}
+                color={colors.brand}
+              />
+            </View>
+          </Pressable>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardKicker}>Privacy</Text>
           <Text style={styles.privacyText}>
             Your real email and personal info are never visible to other students. Only your handle{" "}
@@ -163,6 +187,10 @@ export default function Profile() {
           <Ionicons name="log-out-outline" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Log out</Text>
         </Pressable>
+
+        <Text style={styles.creditFooter} testID="creator-credit">
+          Created by Siddharth Nishad
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -181,6 +209,8 @@ function ActionTile({
   onPress: () => void;
   testID: string;
 }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <Pressable
       testID={testID}
@@ -193,7 +223,7 @@ function ActionTile({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   coverWrap: { height: 180, width: "100%", overflow: "hidden" },
   avatarWrap: {
@@ -280,4 +310,14 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
   },
   logoutText: { color: colors.error, fontWeight: "800", fontSize: 15 },
+  creditFooter: {
+    textAlign: "center",
+    color: colors.onSurfaceMuted,
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    marginTop: spacing.xl,
+    marginBottom: spacing.lg,
+    opacity: 0.7,
+  },
 });

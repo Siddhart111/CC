@@ -90,6 +90,14 @@ class SendMessageReq(BaseModel):
     content: str
 
 
+class ConfessionCreateReq(BaseModel):
+    content: str = Field(min_length=1, max_length=600)
+    mood: Optional[str] = None  # e.g. "spicy", "lol", "vent", "love"
+
+
+CONFESSION_MOODS = ["lol", "spicy", "vent", "love", "wholesome", "tea"]
+
+
 # --- Helpers ---
 def now_utc() -> datetime:
     return datetime.now(timezone.utc)
@@ -504,6 +512,93 @@ async def join_group(chat_id: str, current=Depends(get_current_user)):
     return {"ok": True}
 
 
+# --- Confessions wall ---
+CONFESSION_COLORS = ["#FFC13B", "#4ECDC4", "#FF6B6B", "#A06CD5", "#56D6CD", "#F7A072"]
+CONFESSION_MASKS = [
+    "Anon Falcon", "Anon Otter", "Anon Comet", "Anon Moose", "Anon Yeti",
+    "Anon Phoenix", "Anon Llama", "Anon Sparrow", "Anon Koala", "Anon Whale",
+    "Anon Mango", "Anon Cactus", "Anon Pebble", "Anon Glitter", "Anon Cloud",
+]
+
+
+def _serialize_confession(c: dict, my_id: str) -> dict:
+    hearts = c.get("hearts", []) or []
+    return {
+        "confession_id": c["confession_id"],
+        "content": c["content"],
+        "mood": c.get("mood"),
+        "anon_username": c.get("anon_username"),
+        "color": c.get("color"),
+        "heart_count": len(hearts),
+        "has_hearted": my_id in hearts,
+        "is_mine": c.get("author_id") == my_id,
+        "created_at": c["created_at"],
+    }
+
+
+@api.post("/confessions")
+async def post_confession(req: ConfessionCreateReq, current=Depends(get_current_user)):
+    mood = (req.mood or "").lower().strip() or None
+    if mood and mood not in CONFESSION_MOODS:
+        mood = None
+    confession_id = f"c_{uuid.uuid4().hex[:14]}"
+    doc = {
+        "confession_id": confession_id,
+        "college_id": current["college_id"],
+        "author_id": current["user_id"],
+        "anon_username": random.choice(CONFESSION_MASKS),
+        "color": random.choice(CONFESSION_COLORS),
+        "content": req.content.strip(),
+        "mood": mood,
+        "hearts": [],
+        "created_at": now_utc().isoformat(),
+    }
+    await db.confessions.insert_one(dict(doc))
+    return _serialize_confession(doc, current["user_id"])
+
+
+@api.get("/confessions")
+async def list_confessions(sort: str = "new", current=Depends(get_current_user)):
+    query = {"college_id": current["college_id"]}
+    items = await db.confessions.find(query, {"_id": 0}).limit(200).to_list(200)
+    if sort == "hot":
+        items.sort(key=lambda c: (len(c.get("hearts", []) or []), c["created_at"]), reverse=True)
+    else:
+        items.sort(key=lambda c: c["created_at"], reverse=True)
+    return [_serialize_confession(c, current["user_id"]) for c in items]
+
+
+@api.post("/confessions/{confession_id}/heart")
+async def heart_confession(confession_id: str, current=Depends(get_current_user)):
+    c = await db.confessions.find_one(
+        {"confession_id": confession_id, "college_id": current["college_id"]}, {"_id": 0}
+    )
+    if not c:
+        raise HTTPException(status_code=404, detail="Confession not found")
+    hearts = set(c.get("hearts", []) or [])
+    if current["user_id"] in hearts:
+        hearts.discard(current["user_id"])
+        action = "removed"
+    else:
+        hearts.add(current["user_id"])
+        action = "added"
+    await db.confessions.update_one(
+        {"confession_id": confession_id}, {"$set": {"hearts": list(hearts)}}
+    )
+    return {"action": action, "heart_count": len(hearts), "has_hearted": action == "added"}
+
+
+@api.delete("/confessions/{confession_id}")
+async def delete_confession(confession_id: str, current=Depends(get_current_user)):
+    c = await db.confessions.find_one({"confession_id": confession_id}, {"_id": 0})
+    if not c:
+        raise HTTPException(status_code=404, detail="Not found")
+    if c.get("author_id") != current["user_id"]:
+        raise HTTPException(status_code=403, detail="Only the author can delete this")
+    await db.confessions.delete_one({"confession_id": confession_id})
+    return {"ok": True}
+
+
 # --- WebSocket endpoint ---
 @app.websocket("/api/ws")
 async def websocket_endpoint(websocket: WebSocket, token: str):
@@ -539,6 +634,8 @@ async def startup():
     await db.chat_members.create_index([("chat_id", 1), ("user_id", 1)], unique=True)
     await db.messages.create_index([("chat_id", 1), ("created_at", 1)])
     await db.chats.create_index("chat_id", unique=True)
+    await db.confessions.create_index("confession_id", unique=True)
+    await db.confessions.create_index([("college_id", 1), ("created_at", -1)])
     # seed UPES Lounge
     for c in COLLEGES:
         existing = await db.chats.find_one({"chat_id": c["lounge_id"]}, {"_id": 0})

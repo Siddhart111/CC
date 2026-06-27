@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 2 testing of Confessions Wall + Dark Theme + 'Created by Siddharth Nishad' credit. Backend: 31/31 pytest tests passed (11 new confession tests + 20 regression tests from iter 1). All confession API contracts verified: POST creates with anon_username/color/heart_count=0/has_hearted=false/is_mine=true and NEVER leaks author_id; empty content → 422; invalid mood silently nulled; GET default sorts by created_at desc; sort=hot orders by heart_count desc then created_at desc; heart toggles add↔remove with correct counts; DELETE returns 403 for non-author, 200 for author, then list excludes it and re-delete → 404; nonexistent heart → 404; college scoping intact. Backend startup logs clean, no index errors. Frontend (mobile 390x844, web preview): Welcome credit visible; Login → Wall tab loads; composer's mood chips correctly hidden in empty state and appear when typing; selecting Spicy + Drop posts a card that appears at top with mood emoji, anon mask, color badge; heart icon toggles fill and counter ('1' ↔ '0') optimistically; Hot/Fresh segmented control reloads the list; Profile shows 'Created by Siddharth Nishad' footer and 'Appearance' card; tapping Dark mode flipped Profile bg from rgb(253,252,248) to rgb(14,15,18), the same dark color carried over to the Wall tab confirming app-wide theming, and the dark preference persisted across a full page reload. Regression: lounge chat send still works under the new theme-context refactor. The require-cycle warning between theme.ts ↔ theme-context.tsx is logged but non-blocking (no runtime error, all theme values resolved correctly).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "theme.ts ↔ theme-context.tsx",
+       "issue": "Metro require-cycle warning: 'src/lib/theme.ts -> src/lib/theme-context.tsx -> src/lib/theme.ts'. Non-blocking at runtime (all colors resolve correctly, dark mode works), but worth refactoring to break the cycle (e.g. move shared color tokens into a leaf module that both files import). Reference: /app/frontend/src/lib/theme.ts and /app/frontend/src/lib/theme-context.tsx"}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_confessions.py",
+    "/app/backend/tests/test_campus_chat_api.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_confessions.xml"
+  ],
+  "action_items": [
+    "(Optional, non-blocking) Break the theme.ts ↔ theme-context.tsx require-cycle by extracting raw color palettes/types into a separate leaf file (e.g. theme-tokens.ts) that both modules import."
+  ],
+  "critical_code_review_comments": [
+    "server.py is now ~670 lines; still acceptable but starting to grow — once another feature lands consider splitting into routers (auth.py, chats.py, confessions.py, ws.py).",
+    "_serialize_confession correctly strips author_id and hearts list — privacy contract upheld.",
+    "Confession `sort=hot` uses Python in-memory sort over up to 200 docs (fine for current scale); when traffic grows, move to an aggregation pipeline with a heart_count field maintained on toggle to avoid full collection scan.",
+    "ConfessionCreateReq enforces min_length=1/max_length=600 via Pydantic (good) but mood is sanitized silently (returns 200 with mood=null) — acceptable per spec; document for frontend that an invalid mood will be reflected back as null.",
+    "Frontend wall composer hides mood chips + Drop button until user types — intentional UX per problem statement, verified.",
+    "Heart endpoint reads then writes hearts list — has a small TOCTOU race under concurrent taps from same user; not user-facing critical, but using $addToSet / $pull would be safer atomically."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_confessions.py (new)"
+  ],
+  "success_rate": {"backend": "100% (31/31)", "frontend": "100% on tested flows (wall composer, mood chips, drop, heart toggle, sort toggle, profile dark toggle + persistence, welcome+profile credit footer)"},
+  "seed_data_creation": "Created on-the-fly TEST_-prefixed UPES accounts (TEST_conf_*, TEST_usera_*, TEST_userb_*, walltest*@upes.ac.in) and various TEST_-prefixed confessions during e2e. No production data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Confession testIDs: wall-screen, wall-composer-input, wall-mood-{lol|spicy|tea|love|vent|wholesome}, wall-post-btn, wall-sort-{new|hot}, confession-card-<id>, confession-heart-<id>. Profile testIDs: profile-screen, profile-theme-toggle, creator-credit. Welcome testIDs: welcome-screen, welcome-login-btn, welcome-signup-btn. To exercise full backend suite: `pytest /app/backend/tests/ -v --junitxml=/app/test_reports/pytest/pytest_results.xml`. Note: signing up via Python's urllib hits a 403 from the preview proxy — use Playwright's `page.request.post` or `requests` (with default UA) instead; this affected an earlier run only.",
+  "rca_of_issue": "N/A — no bugs found in this iteration. All 19 review-request acceptance criteria verified green."
+}

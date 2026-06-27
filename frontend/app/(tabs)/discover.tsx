@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth-context";
 import { colorForName } from "@/src/lib/avatars";
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 type UserRow = {
   user_id: string;
@@ -33,6 +33,8 @@ type UserRow = {
 export default function Discover() {
   const router = useRouter();
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -170,7 +172,7 @@ export default function Discover() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   header: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: 4 },
   title: { fontSize: 30, fontWeight: "800", color: colors.onSurface, letterSpacing: -0.4 },

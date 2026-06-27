@@ -5,10 +5,16 @@ import * as Haptics from "expo-haptics";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 export default function Welcome() {
   const router = useRouter();
+  const { colors, effective } = useTheme();
+  const styles = makeStyles(colors);
+  const scrim =
+    effective === "dark"
+      ? (["rgba(14,15,18,0.2)", "rgba(14,15,18,0.85)", colors.surface] as const)
+      : (["rgba(253,252,248,0.1)", "rgba(253,252,248,0.85)", colors.surface] as const);
   return (
     <View style={styles.container} testID="welcome-screen">
       <Image
@@ -17,7 +23,7 @@ export default function Welcome() {
         contentFit="cover"
       />
       <LinearGradient
-        colors={["rgba(253,252,248,0.1)", "rgba(253,252,248,0.85)", "#FDFCF8"]}
+        colors={scrim}
         locations={[0, 0.55, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -59,13 +65,14 @@ export default function Welcome() {
             <Text style={styles.secondaryBtnText}>I already have an account</Text>
           </Pressable>
           <Text style={styles.fineprint}>UPES students only • @upes.ac.in email required</Text>
+          <Text style={styles.credit}>Created by Siddharth Nishad</Text>
         </View>
       </SafeAreaView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   safe: { flex: 1, paddingHorizontal: spacing.xl, justifyContent: "space-between" },
   topRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.sm },
@@ -106,4 +113,5 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: { color: colors.onSurface, fontSize: 16, fontWeight: "700" },
   fineprint: { textAlign: "center", color: colors.onSurfaceMuted, fontSize: 12 },
+  credit: { textAlign: "center", color: colors.onSurfaceMuted, fontSize: 11, fontWeight: "700", letterSpacing: 0.5, marginTop: 2, opacity: 0.85 },
 });

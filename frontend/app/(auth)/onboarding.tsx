@@ -17,11 +17,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth-context";
 import { pickRandomAvatar } from "@/src/lib/avatars";
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 export default function Onboarding() {
   const router = useRouter();
   const { user, setUser } = useAuth();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [anonName, setAnonName] = useState(user?.anon_username || "");
   const [pic, setPic] = useState<string | null>(user?.profile_pic || pickRandomAvatar());
   const [loading, setLoading] = useState(false);
@@ -133,7 +135,7 @@ export default function Onboarding() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   scroll: { padding: spacing.xl, gap: spacing.lg },
   kicker: {

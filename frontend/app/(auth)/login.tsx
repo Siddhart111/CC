@@ -16,11 +16,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/src/lib/auth-context";
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 export default function Login() {
   const router = useRouter();
   const { login } = useAuth();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -130,6 +132,8 @@ export default function Login() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   return (
     <View style={{ gap: spacing.xs }}>
       <Text style={styles.label}>{label}</Text>
@@ -138,7 +142,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   scroll: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl, gap: spacing.xl },
   backBtn: {

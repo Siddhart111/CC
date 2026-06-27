@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api, getToken, wsUrl } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth-context";
 import { colorForName } from "@/src/lib/avatars";
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 type Message = {
   message_id: string;
@@ -33,6 +33,8 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [messages, setMessages] = useState<Message[] | null>(null);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -237,7 +239,7 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   header: {
     flexDirection: "row",

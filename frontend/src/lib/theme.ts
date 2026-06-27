@@ -1,5 +1,5 @@
-// Campus Chat design tokens
-export const colors = {
+// Campus Chat design tokens — light + dark palettes
+export const lightColors = {
   surface: "#FDFCF8",
   surfaceSecondary: "#FFFFFF",
   surfaceTertiary: "#FFF0E6",
@@ -20,8 +20,46 @@ export const colors = {
   border: "#E8E6E1",
   borderStrong: "#1A1A1A",
   divider: "#E8E6E1",
+  inputBg: "#FFFFFF",
+  bubbleOther: "#FFFFFF",
+  errorBg: "#FFE5E5",
+  overlayScrim: "rgba(253,252,248,0.95)",
   shadow: "rgba(26,26,26,0.08)",
 };
+
+export const darkColors: typeof lightColors = {
+  surface: "#0E0F12",
+  surfaceSecondary: "#171A20",
+  surfaceTertiary: "#241B17",
+  surfaceInverse: "#FDFCF8",
+  onSurface: "#F5F4EE",
+  onSurfaceMuted: "#9C9A92",
+  onSurfaceInverse: "#0E0F12",
+  brand: "#FF7A7A",
+  brandPrimary: "#FF7A7A",
+  onBrandPrimary: "#0E0F12",
+  brandSecondary: "#FFCB58",
+  onBrandSecondary: "#0E0F12",
+  brandTertiary: "#56D6CD",
+  onBrandTertiary: "#0E0F12",
+  success: "#56D6CD",
+  warning: "#FFCB58",
+  error: "#FF7A7A",
+  border: "#26292F",
+  borderStrong: "#F5F4EE",
+  divider: "#26292F",
+  inputBg: "#1F232A",
+  bubbleOther: "#1F232A",
+  errorBg: "#3A1F1F",
+  overlayScrim: "rgba(14,15,18,0.95)",
+  shadow: "rgba(0,0,0,0.5)",
+};
+
+export type ColorScheme = typeof lightColors;
+
+// Back-compat: legacy `colors` import used by code paths that don't read from context.
+// Defaults to light. Real screens should call useTheme().
+export const colors: ColorScheme = lightColors;
 
 export const spacing = {
   xs: 4,
@@ -40,27 +78,4 @@ export const radius = {
   pill: 999,
 };
 
-export const typography = {
-  display: "Fredoka_600SemiBold", // loaded at runtime, falls back to system
-  displayBold: "Fredoka_700Bold",
-  text: "Nunito_400Regular",
-  textSemi: "Nunito_600SemiBold",
-  textBold: "Nunito_700Bold",
-};
-
-export const shadow = {
-  small: {
-    shadowColor: "#1A1A1A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  medium: {
-    shadowColor: "#1A1A1A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-};
+export { useTheme } from "./theme-context";

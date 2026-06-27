@@ -2,9 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Platform, View } from "react-native";
 
-import { colors } from "@/src/lib/theme";
+import { useTheme } from "@/src/lib/theme";
 
 export default function TabsLayout() {
+  const { colors } = useTheme();
   return (
     <Tabs
       screenOptions={{
@@ -28,6 +29,15 @@ export default function TabsLayout() {
           title: "Chats",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="wall"
+        options={{
+          title: "Wall",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "flame" : "flame-outline"} size={26} color={color} />
           ),
         }}
       />

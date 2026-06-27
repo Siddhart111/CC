@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "@/src/lib/api";
 import { colorForName } from "@/src/lib/avatars";
-import { colors, radius, spacing } from "@/src/lib/theme";
+import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 type Friend = {
   user_id: string;
@@ -31,6 +31,8 @@ type Request = {
 
 export default function Friends() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [tab, setTab] = useState<"friends" | "requests">("friends");
   const [friends, setFriends] = useState<Friend[] | null>(null);
   const [requests, setRequests] = useState<Request[] | null>(null);
@@ -199,7 +201,7 @@ export default function Friends() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.surface },
   header: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, paddingBottom: spacing.md },
   title: { fontSize: 30, fontWeight: "800", color: colors.onSurface, letterSpacing: -0.4 },
