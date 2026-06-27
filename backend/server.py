@@ -25,7 +25,7 @@ from firebase_admin import credentials, firestore
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-MONGO_URL = os.environ["MONGO_URL"]
+_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
 JWT_SECRET = os.environ.get("JWT_SECRET", "campus-chat-dev-secret-change-me")
 JWT_ALGO = "HS256"
@@ -39,7 +39,10 @@ OTP_MAX_ATTEMPTS = 5
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
 
-app = FastAPI(title="Campus Chat API")
+app = FastAPI(title="MONGOCampus Chat API")
+cred = credentials.Certificate("firebase-key.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -739,8 +742,8 @@ async def delete_confession(confession_id: str, current=Depends(get_current_user
     return {"ok": True}
 
 
-# --- WebSocket endpoint ---
-@app.websocket("/api/ws")
+# ---  endpoint ---
+@app.websocketWebSocket("/api/ws")
 async def websocket_endpoint(websocket: WebSocket, token: str):
     user_id = decode_token(token)
     if not user_id:
