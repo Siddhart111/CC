@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "@/src/lib/api";
-import { useAuth } from "@/src/lib/auth-context";
+import { signupCache } from "@/src/lib/signup-cache";
 import { radius, spacing, useTheme } from "@/src/lib/theme";
 
 type College = {
@@ -29,7 +29,6 @@ type College = {
 
 export default function Signup() {
   const router = useRouter();
-  const { signup } = useAuth();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [colleges, setColleges] = useState<College[]>([]);
@@ -65,12 +64,14 @@ export default function Signup() {
     }
     setLoading(true);
     try {
-      await signup(email.trim().toLowerCase(), password, collegeId);
+      const emailLower = email.trim().toLowerCase();
+      await api.post("/auth/request-otp", { email: emailLower, college_id: collegeId });
+      signupCache.set({ email: emailLower, password, college_id: collegeId });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(auth)/onboarding");
+      router.push(`/(auth)/otp?email=${encodeURIComponent(emailLower)}`);
     } catch (e: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e?.message || "Signup failed");
+      setError(e?.message || "Could not send code");
     } finally {
       setLoading(false);
     }
@@ -208,7 +209,7 @@ export default function Signup() {
               {loading ? (
                 <ActivityIndicator color={colors.onBrandPrimary} />
               ) : (
-                <Text style={styles.primaryBtnText}>Create my anonymous account</Text>
+                <Text style={styles.primaryBtnText}>Send verification code</Text>
               )}
             </Pressable>
 

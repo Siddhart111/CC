@@ -38,9 +38,15 @@ class TestHealth:
 class TestAuth:
     def test_signup_valid_upes(self, api_client):
         email = f"TEST_sa_{uuid.uuid4().hex[:8]}@upes.ac.in"
+        ro = api_client.post(
+            f"{BASE_URL}/api/auth/request-otp",
+            json={"email": email, "college_id": "upes-dehradun"},
+        )
+        assert ro.status_code == 200, ro.text
+        otp = ro.json()["dev_otp"]
         r = api_client.post(
             f"{BASE_URL}/api/auth/signup",
-            json={"email": email, "password": "test1234", "college_id": "upes-dehradun"},
+            json={"email": email, "password": "test1234", "college_id": "upes-dehradun", "otp": otp},
         )
         assert r.status_code == 200, r.text
         data = r.json()
@@ -57,14 +63,20 @@ class TestAuth:
         email = f"TEST_bad_{uuid.uuid4().hex[:6]}@gmail.com"
         r = api_client.post(
             f"{BASE_URL}/api/auth/signup",
-            json={"email": email, "password": "test1234", "college_id": "upes-dehradun"},
+            json={"email": email, "password": "test1234", "college_id": "upes-dehradun", "otp": "123456"},
         )
         assert r.status_code == 400, r.text
         assert "must end with" in r.json()["detail"].lower() or "upes" in r.json()["detail"].lower()
 
     def test_signup_duplicate(self, api_client):
         email = f"TEST_dup_{uuid.uuid4().hex[:6]}@upes.ac.in"
-        body = {"email": email, "password": "test1234", "college_id": "upes-dehradun"}
+        ro = api_client.post(
+            f"{BASE_URL}/api/auth/request-otp",
+            json={"email": email, "college_id": "upes-dehradun"},
+        )
+        assert ro.status_code == 200
+        otp = ro.json()["dev_otp"]
+        body = {"email": email, "password": "test1234", "college_id": "upes-dehradun", "otp": otp}
         r1 = api_client.post(f"{BASE_URL}/api/auth/signup", json=body)
         assert r1.status_code == 200
         r2 = api_client.post(f"{BASE_URL}/api/auth/signup", json=body)
@@ -222,9 +234,15 @@ class TestChats:
 
         # Make a 3rd user not in this dm
         email_c = f"TEST_userc_{uuid.uuid4().hex[:6]}@ddn.upes.ac.in"
+        ro = api_client.post(
+            f"{BASE_URL}/api/auth/request-otp",
+            json={"email": email_c, "college_id": "upes-dehradun"},
+        )
+        assert ro.status_code == 200
+        otp_c = ro.json()["dev_otp"]
         rs = api_client.post(
             f"{BASE_URL}/api/auth/signup",
-            json={"email": email_c, "password": "test1234", "college_id": "upes-dehradun"},
+            json={"email": email_c, "password": "test1234", "college_id": "upes-dehradun", "otp": otp_c},
         )
         assert rs.status_code == 200
         token_c = rs.json()["token"]

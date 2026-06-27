@@ -28,9 +28,20 @@ def api_client():
 
 
 def _signup(client, email: str, password: str = "test1234", college_id: str = "upes-dehradun"):
+    # Step 1: request OTP (dev_otp returned because RESEND_API_KEY is empty)
+    ro = client.post(
+        f"{BASE_URL}/api/auth/request-otp",
+        json={"email": email, "college_id": college_id},
+        timeout=15,
+    )
+    assert ro.status_code == 200, f"request-otp failed: {ro.status_code} {ro.text}"
+    body = ro.json()
+    otp = body.get("dev_otp")
+    assert otp, f"No dev_otp returned (email_sent={body.get('email_sent')})"
+    # Step 2: signup with OTP
     r = client.post(
         f"{BASE_URL}/api/auth/signup",
-        json={"email": email, "password": password, "college_id": college_id},
+        json={"email": email, "password": password, "college_id": college_id, "otp": otp},
         timeout=15,
     )
     return r

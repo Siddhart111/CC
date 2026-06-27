@@ -4,6 +4,10 @@ import uuid
 import random
 import logging
 import asyncio
+import secrets as pysecrets
+import urllib.parse
+import urllib.request
+import json as pyjson
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Set
@@ -24,6 +28,11 @@ DB_NAME = os.environ["DB_NAME"]
 JWT_SECRET = os.environ.get("JWT_SECRET", "campus-chat-dev-secret-change-me")
 JWT_ALGO = "HS256"
 JWT_TTL_DAYS = 30
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+RESEND_FROM = os.environ.get("RESEND_FROM", "Campus Chat <onboarding@resend.dev>")
+OTP_TTL_MIN = 10
+OTP_RESEND_COOLDOWN_SEC = 60
+OTP_MAX_ATTEMPTS = 5
 
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
@@ -59,6 +68,12 @@ def generate_anon_username() -> str:
 class SignupReq(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
+    college_id: str
+    otp: str = Field(min_length=6, max_length=6)
+
+
+class RequestOtpReq(BaseModel):
+    email: EmailStr
     college_id: str
 
 
@@ -186,6 +201,57 @@ class WSManager:
 ws_manager = WSManager()
 
 
+# --- Resend email helper ---
+def send_email_resend(to_email: str, subject: str, html: str, text: str) -> bool:
+    """Send an email via Resend HTTP API. Returns True on success, False otherwise.
+    If RESEND_API_KEY is not configured, logs the message and returns False so callers
+    can fall back to dev mode (returning the OTP in the response)."""
+    if not RESEND_API_KEY:
+        logger.warning(f"[DEV] No RESEND_API_KEY set. Would have sent to {to_email}: {subject}")
+        return False
+    body = pyjson.dumps(
+        {"from": RESEND_FROM, "to": [to_email], "subject": subject, "html": html, "text": text}
+    ).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        # Run blocking call off the event loop
+        loop = asyncio.get_event_loop()
+        def _do():
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return resp.status
+        # Synchronous fallback (call directly; small payload, fast)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return 200 <= resp.status < 300
+    except Exception as e:
+        logger.error(f"Resend send failed for {to_email}: {e}")
+        return False
+
+
+def build_otp_email(otp: str) -> tuple[str, str]:
+    html = f"""
+    <div style=\"font-family:-apple-system,system-ui,sans-serif;max-width:520px;margin:auto;padding:32px 24px;background:#0E0F12;color:#F5F4EE;border-radius:16px\">
+      <div style=\"font-size:14px;letter-spacing:2px;color:#C084FC;font-weight:800\">CAMPUS CHAT</div>
+      <h1 style=\"font-size:24px;margin:8px 0 16px\">Verify your campus email</h1>
+      <p style=\"color:#9C9A92;line-height:1.5;font-size:14px\">Use the code below to finish creating your anonymous Campus Chat account. It expires in {OTP_TTL_MIN} minutes.</p>
+      <div style=\"font-size:38px;font-weight:800;letter-spacing:10px;background:#171A20;border:2px solid #C084FC;border-radius:12px;padding:18px;text-align:center;margin:24px 0;color:#F5F4EE\">{otp}</div>
+      <p style=\"color:#9C9A92;font-size:12px\">If you didn't request this, you can ignore this email.</p>
+    </div>
+    """
+    text = (
+        f"Campus Chat verification code: {otp}\n\n"
+        f"This code expires in {OTP_TTL_MIN} minutes. If you didn't request it, ignore this email."
+    )
+    return html, text
+
+
 # --- Routes ---
 @api.get("/")
 async def root():
@@ -206,6 +272,47 @@ async def list_colleges():
     ]
 
 
+@api.post("/auth/request-otp")
+async def request_otp(req: RequestOtpReq):
+    college = find_college(req.college_id)
+    if not college:
+        raise HTTPException(status_code=400, detail="Invalid college")
+    domain = email_domain(req.email)
+    if domain not in college["allowed_domains"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Email must end with one of: {', '.join('@'+d for d in college['allowed_domains'])}",
+        )
+    email = req.email.lower()
+    if await db.users.find_one({"email": email}, {"_id": 0}):
+        raise HTTPException(status_code=400, detail="Email already registered. Please login.")
+    existing = await db.email_otps.find_one({"email": email}, {"_id": 0})
+    now = now_utc()
+    if existing and existing.get("last_sent_at"):
+        last = datetime.fromisoformat(existing["last_sent_at"])
+        elapsed = (now - last).total_seconds()
+        if elapsed < OTP_RESEND_COOLDOWN_SEC:
+            wait = int(OTP_RESEND_COOLDOWN_SEC - elapsed)
+            raise HTTPException(status_code=429, detail=f"Please wait {wait}s before requesting another code.")
+    otp = f"{pysecrets.randbelow(1000000):06d}"
+    doc = {
+        "email": email,
+        "otp_hash": hash_password(otp),
+        "attempts": 0,
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(minutes=OTP_TTL_MIN)).isoformat(),
+        "last_sent_at": now.isoformat(),
+    }
+    await db.email_otps.update_one({"email": email}, {"$set": doc}, upsert=True)
+    html, text = build_otp_email(otp)
+    sent = send_email_resend(email, "Your Campus Chat verification code", html, text)
+    resp: dict = {"ok": True, "cooldown_seconds": OTP_RESEND_COOLDOWN_SEC, "ttl_minutes": OTP_TTL_MIN, "email_sent": sent}
+    if not sent:
+        resp["dev_otp"] = otp
+        resp["dev_note"] = "Email provider not configured; using dev OTP."
+    return resp
+
+
 @api.post("/auth/signup")
 async def signup(req: SignupReq):
     college = find_college(req.college_id)
@@ -217,14 +324,27 @@ async def signup(req: SignupReq):
             status_code=400,
             detail=f"Email must end with one of: {', '.join('@'+d for d in college['allowed_domains'])}",
         )
-    existing = await db.users.find_one({"email": req.email.lower()}, {"_id": 0})
-    if existing:
+    email = req.email.lower()
+    if await db.users.find_one({"email": email}, {"_id": 0}):
         raise HTTPException(status_code=400, detail="Email already registered. Please login.")
+    otp_doc = await db.email_otps.find_one({"email": email}, {"_id": 0})
+    if not otp_doc:
+        raise HTTPException(status_code=400, detail="Please request an OTP first.")
+    if datetime.fromisoformat(otp_doc["expires_at"]) < now_utc():
+        await db.email_otps.delete_one({"email": email})
+        raise HTTPException(status_code=400, detail="OTP expired. Request a new one.")
+    if otp_doc.get("attempts", 0) >= OTP_MAX_ATTEMPTS:
+        await db.email_otps.delete_one({"email": email})
+        raise HTTPException(status_code=400, detail="Too many wrong attempts. Request a new code.")
+    if not verify_password(req.otp, otp_doc["otp_hash"]):
+        await db.email_otps.update_one({"email": email}, {"$inc": {"attempts": 1}})
+        raise HTTPException(status_code=400, detail="Wrong OTP. Try again.")
+    await db.email_otps.delete_one({"email": email})
     user_id = f"u_{uuid.uuid4().hex[:12]}"
     anon = generate_anon_username()
     user = {
         "user_id": user_id,
-        "email": req.email.lower(),
+        "email": email,
         "password_hash": hash_password(req.password),
         "college_id": req.college_id,
         "anon_username": anon,
@@ -233,7 +353,6 @@ async def signup(req: SignupReq):
         "created_at": now_utc().isoformat(),
     }
     await db.users.insert_one(user)
-    # auto-join lounge
     await db.chat_members.update_one(
         {"chat_id": college["lounge_id"], "user_id": user_id},
         {"$set": {"chat_id": college["lounge_id"], "user_id": user_id, "joined_at": now_utc().isoformat()}},
@@ -636,6 +755,7 @@ async def startup():
     await db.chats.create_index("chat_id", unique=True)
     await db.confessions.create_index("confession_id", unique=True)
     await db.confessions.create_index([("college_id", 1), ("created_at", -1)])
+    await db.email_otps.create_index("email", unique=True)
     # seed UPES Lounge (idempotent rename: ensure title is short college code, e.g. "UPES")
     for c in COLLEGES:
         await db.chats.update_one(

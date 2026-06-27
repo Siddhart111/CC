@@ -16,9 +16,16 @@ BASE_URL = (
 # Helper signups (don't depend on session-scoped users that may be shared)
 def _signup_new():
     email = f"TEST_conf_{uuid.uuid4().hex[:8]}@upes.ac.in"
+    ro = requests.post(
+        f"{BASE_URL}/api/auth/request-otp",
+        json={"email": email, "college_id": "upes-dehradun"},
+        timeout=15,
+    )
+    assert ro.status_code == 200, ro.text
+    otp = ro.json()["dev_otp"]
     r = requests.post(
         f"{BASE_URL}/api/auth/signup",
-        json={"email": email, "password": "test1234", "college_id": "upes-dehradun"},
+        json={"email": email, "password": "test1234", "college_id": "upes-dehradun", "otp": otp},
         timeout=15,
     )
     assert r.status_code == 200, r.text

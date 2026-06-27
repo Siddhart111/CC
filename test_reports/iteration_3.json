@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 3: Tested OTP-gated signup flow (Resend MOCKED via dev_otp because RESEND_API_KEY=''). Backend: 43/43 pytest tests pass (12 new test_otp_signup.py + 31 regression after fixing test helpers to use request-otp + signup). Frontend (Expo web preview @390x844): full happy path & failure paths verified end-to-end. All acceptance criteria from review request green: (1) request-otp returns {ok:true, cooldown_seconds:60, ttl_minutes:10, email_sent:false, dev_otp:<6 digits>} for valid UPES email; (2) non-UPES domain → 400 with 'must end with @upes...'; (3) repeated request within 60s → 429 'Please wait Ns before requesting another code.'; (4) already-registered email request-otp → 400 'Email already registered.'; (5) signup without prior request-otp → 400 'Please request an OTP first.'; (6) signup wrong OTP → 400 'Wrong OTP. Try again.' and attempts counter increments; (7) signup correct OTP → 200 with {token,user}, user auto-joined to group-upes-lounge (verified via GET /api/chats), OTP doc deleted (2nd identical signup → 400 'Email already registered.'); (8) 5 wrong OTPs then 6th attempt → 400 'Too many wrong attempts. Request a new code.' and OTP doc deleted (subsequent correct OTP → 400 'Please request an OTP first.'); (9) signup non-UPES domain rejected even with otp shape supplied; (10) email_otps has unique index on email (enforced by startup index + upsert in request-otp); (11) Pydantic 422 for otp='' and otp='12345'; (12) login flow unchanged — no otp field required. Frontend e2e on mobile viewport: Welcome → 'Create anonymous account' → signup screen (testID signup-screen) with college auto-selected, email/password/confirm fields → 'Send verification code' button calls request-otp and navigates to /otp?email=... → OTP screen shows mail icon, target email, 6 slot inputs, 'Resend in 58s' countdown; wrong OTP shows red error box 'Wrong OTP. Try again.' and slots auto-clear; correct OTP auto-submits on 6th digit and navigates to /onboarding (Step 2 of 2 — anonymous persona screen). Back button on OTP screen returns to signup. Cooldown enforced: re-submitting signup within 60s shows 'Please wait 56s before requesting another code.' in signup-error box. Welcome 'I already have an account' button still present (login path untouched). All testIDs present and correctly wired: welcome-signup-btn, welcome-login-btn, signup-screen, signup-email-input, signup-password-input, signup-confirm-input, signup-submit-btn, signup-error, signup-back-btn, otp-screen, otp-input, otp-back-btn, otp-resend-btn, otp-error.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "theme.ts ↔ theme-context.tsx", "issue": "Pre-existing Metro require-cycle warning (non-blocking, carried from iter 2). Reference: /app/frontend/src/lib/theme.ts and /app/frontend/src/lib/theme-context.tsx"}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_otp_signup.py",
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_campus_chat_api.py",
+    "/app/backend/tests/test_confessions.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_otp.xml"
+  ],
+  "action_items": [
+    "(Optional, pre-existing) Break theme.ts ↔ theme-context.tsx require-cycle by extracting tokens to a leaf module.",
+    "(Optional, security/UX) Consider rate-limiting request-otp per IP in addition to per-email cooldown to prevent enumeration of registered emails (currently a 400 vs 200 difference on first call lets a caller probe which UPES emails are registered).",
+    "(Optional, UX) When user hits 'Send verification code' the second time and gets 429, the signup screen could auto-navigate to /otp instead of showing the error, since the previous OTP is still valid for 10 min. Today user has to wait or refresh."
+  ],
+  "critical_code_review_comments": [
+    "signup-cache.ts holds the password only in module-level memory and is cleared on success — good privacy posture (no AsyncStorage, no router params).",
+    "OTP is stored as bcrypt hash in email_otps with attempts counter and TTL via expires_at iso string. Atomic — wrong-attempt increment uses $inc; deletion on 5+ attempts and on successful signup. Clean.",
+    "Pydantic SignupReq enforces otp min=max=6 → 422 path verified.",
+    "send_email_resend gracefully falls back to dev mode when RESEND_API_KEY is missing and surfaces dev_otp in response — correct for the MOCKED scenario; in production this branch will be skipped.",
+    "server.py is at ~792 lines; OTP+auth logic could be extracted to backend/routers/auth.py once another feature lands.",
+    "send_email_resend has a small dead-code branch (`loop = asyncio.get_event_loop(); def _do(): ...`) above the actual blocking urlopen call — harmless but worth pruning for clarity.",
+    "request-otp behavior leaks whether an email is already registered (400 'Email already registered.' vs 200) — acceptable for a closed campus signup UX but flagged."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_otp_signup.py (new — 12 OTP+signup test cases)",
+    "/app/backend/tests/conftest.py (updated _signup helper to use request-otp+signup with dev_otp)",
+    "/app/backend/tests/test_campus_chat_api.py (updated TestAuth.test_signup_valid_upes / test_signup_invalid_domain / test_signup_duplicate / TestChats.test_non_member_cannot_post to flow through OTP)",
+    "/app/backend/tests/test_confessions.py (updated _signup_new helper to flow through OTP)"
+  ],
+  "success_rate": {"backend": "100% (43/43)", "frontend": "100% on tested OTP flows (welcome→signup→otp→onboarding happy path; wrong OTP error+clear; back button; 60s cooldown; mail icon + email render + 6 slot inputs + Resend countdown all visible)"},
+  "seed_data_creation": "Created on-the-fly TEST_-prefixed UPES accounts (otp-<rand>@upes.ac.in, TEST_sa_*, TEST_dup_*, TEST_userc_*, TEST_conf_*, TEST_login_*, TEST_good_*, TEST_toomany_*, etc.). No production data touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "OTP flow now MANDATORY for signup. All test signups MUST POST /api/auth/request-otp first, read dev_otp from response (since RESEND_API_KEY=''), then POST /api/auth/signup with that otp. See conftest.py::_signup helper for the canonical pattern. testIDs added/used: welcome-signup-btn, welcome-login-btn, signup-screen, signup-email-input, signup-password-input, signup-confirm-input, signup-submit-btn, signup-error, signup-back-btn, otp-screen, otp-input (hidden TextInput that drives the 6 slots), otp-back-btn, otp-resend-btn, otp-error. Cooldown is 60s per email; in test loops use a fresh email per case or wait 60s. Real Resend delivery is NOT testable here — when RESEND_API_KEY gets set the dev_otp field will disappear and tests reading dev_otp will need to mock or stub.",
+  "rca_of_issue": "N/A — no bugs found. The 4 regression failures observed before patching were caused by old test helpers calling /api/auth/signup without the new mandatory otp field (returning 422); fixing the helpers to go through request-otp+dev_otp green-lit everything. This is expected behavior — the new contract is enforced by Pydantic and was not a server bug."
+}
