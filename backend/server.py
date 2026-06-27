@@ -647,7 +647,7 @@ async def startup():
                     "college_id": c["college_id"],
                     "title": c["short"],
                     "description": f"The official anonymous space for {c['name']} students.",
-                    "cover": "https://images.unsplash.com/photo-1517256673644-36ad11246d21",
+                    "cover": "https://customer-assets.emergentagent.com/job_college-hub-chat/artifacts/yeya0mm6_IMG_1965.jpg",
                 },
                 "$setOnInsert": {"created_at": now_utc().isoformat()},
             },
