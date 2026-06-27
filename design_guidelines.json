@@ -1,0 +1,191 @@
+{
+  "app_name": "Campus Chat",
+  "personality": "4 Tactile / Playful LIGHT",
+  "personality_one_liner": "A touchable, youthful, and vibrant anonymous community that feels like a digital scrapbook of college life—chunky, energetic, and expressive.",
+  "color": {
+    "surface": "#FDFCF8",
+    "onSurface": "#1A1A1A",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurfaceSecondary": "#1A1A1A",
+    "surfaceTertiary": "#FFF0E6",
+    "onSurfaceTertiary": "#FF6B6B",
+    "surfaceInverse": "#1A1A1A",
+    "onSurfaceInverse": "#FDFCF8",
+    "brand": "#FF6B6B",
+    "brandPrimary": "#FF6B6B",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#FFC13B",
+    "onBrandSecondary": "#1A1A1A",
+    "brandTertiary": "#4ECDC4",
+    "onBrandTertiary": "#1A1A1A",
+    "success": "#4ECDC4",
+    "onSuccess": "#1A1A1A",
+    "warning": "#FFC13B",
+    "onWarning": "#1A1A1A",
+    "error": "#FF6B6B",
+    "onError": "#FFFFFF",
+    "info": "#1A1A1A",
+    "onInfo": "#FDFCF8",
+    "border": "#E8E6E1",
+    "borderStrong": "#1A1A1A",
+    "divider": "#E8E6E1"
+  },
+  "typography": {
+    "displayFontFamily": "Fredoka",
+    "textFontFamily": "Nunito",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Use md/lg spacing to give a chunky, touchable feel. Oversized tap areas and controlled asymmetry. No cramped layouts.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "2",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Bottom tab bar when content scrolls behind it",
+      "Sticky headers over chat lists and groups",
+      "Modal scrims and floating action buttons over tinted backgrounds"
+    ],
+    "dont's": [
+      "Form fields",
+      "Body text regions",
+      "Every button or standard list row"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "haptics": {
+    "button_press": "light",
+    "tab_change": "selection",
+    "message_sent": "medium",
+    "friend_request_accept": "success",
+    "avatar_randomize": "rigid",
+    "pull_to_refresh": "medium"
+  },
+  "screens": [
+    {
+      "name": "Onboarding & College Selection",
+      "purpose": "Playful, step-by-step introduction where users pick their college (UPES) and generate an anonymous identity.",
+      "states": {
+        "loading": "Centered oversized mint spinner.",
+        "empty": "N/A",
+        "error": "Chunky red warning badge with a retry button."
+      },
+      "layout": "Use oversized Fredoka headings. The college selection should feel like picking a chunky card. The avatar creation step should have a large 'randomize' CTA (pill-shaped) to cycle through anonymous names (e.g., BlueTiger42) and abstract 3D avatars. Bottom sticky 'Continue' button."
+    },
+    {
+      "name": "Chats List",
+      "purpose": "Index of all active DMs and the UPES Lounge group.",
+      "states": {
+        "loading": "Centered spinner on the oat surface.",
+        "empty": "Abstract 3D illustration with 'No chats yet!' and a chunky primary CTA to 'Find Friends'.",
+        "error": "Error message with a primary 'Retry' pill button."
+      },
+      "layout": "List rows with minimum 56pt tappable height. Unread badges should be vibrant Coral pills. Avatar circles. Glassmorphism on the top header when scrolling. Floating Action Button (FAB) at the bottom right to start a new chat."
+    },
+    {
+      "name": "Chat Screen (DM & Group)",
+      "purpose": "Real-time messaging thread.",
+      "states": {
+        "loading": "Spinner.",
+        "empty": "Start of conversation sticker-like callout.",
+        "error": "Banner at top."
+      },
+      "layout": "Message bubbles should be rounded with 'lg' to 'pill' radii. User's bubbles in Coral, others in White on the Oat background. Input area fixed at bottom inside KeyboardAvoidingView with a chunky send icon button."
+    },
+    {
+      "name": "Friends & Requests",
+      "purpose": "Manage friend list and incoming anonymous requests.",
+      "states": {
+        "loading": "Spinner.",
+        "empty": "Playful sticker illustration with 'No friend requests right now.'",
+        "error": "Retry block."
+      },
+      "layout": "Segmented control (glass) to toggle between 'Friends' and 'Requests'. Requests use stacked cards with chunky Accept (Mint) and Reject (Charcoal outline) pill buttons. Gentle asymmetry in avatar grouping."
+    },
+    {
+      "name": "Profile",
+      "purpose": "View and edit anonymous persona.",
+      "states": {
+        "loading": "Spinner.",
+        "empty": "N/A",
+        "error": "Retry block."
+      },
+      "layout": "Large cover banner using a gradient (surfaceSecondary to surface) or blurred background photo with gradient-to-dark scrim. Oversized 3D avatar overlapping the banner and content. Stats and settings are laid out in chunky secondary cards."
+    }
+  ],
+  "images": {
+    "hero_onboarding": {
+      "url": "https://images.unsplash.com/photo-1619431667975-e93b820cde63",
+      "dark": "https://images.unsplash.com/photo-1619431667975-e93b820cde63",
+      "alt": "Youthful college student lifestyle photo"
+    },
+    "avatar_blue_tiger": {
+      "url": "https://images.unsplash.com/photo-1728577740843-5f29c7586afe",
+      "dark": "https://images.unsplash.com/photo-1728577740843-5f29c7586afe",
+      "alt": "Playful abstract 3D character avatar with blue hair"
+    },
+    "avatar_yellow_bird": {
+      "url": "https://images.unsplash.com/photo-1740252117027-4275d3f84385",
+      "dark": "https://images.unsplash.com/photo-1740252117027-4275d3f84385",
+      "alt": "Playful 3D avatar with yellow elements"
+    },
+    "avatar_purple_koala": {
+      "url": "https://images.unsplash.com/photo-1740252117070-7aa2955b25f8",
+      "dark": "https://images.unsplash.com/photo-1740252117070-7aa2955b25f8",
+      "alt": "Playful 3D abstract figure"
+    },
+    "upes_lounge_cover": {
+      "url": "https://images.unsplash.com/photo-1517256673644-36ad11246d21",
+      "dark": "https://images.unsplash.com/photo-1517256673644-36ad11246d21",
+      "alt": "Graffiti background youthful lifestyle"
+    },
+    "empty_friends": {
+      "url": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0",
+      "dark": "https://images.unsplash.com/photo-1622547748225-3fc4abd2cca0",
+      "alt": "Playful 3D abstract shape for empty state"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Follow the '4 Tactile / Playful LIGHT' personality strictly. Do NOT use purple, indigo, or navy blues anywhere—rely on the Coral, Marigold, and Mint accents against the Warm Oat background.",
+    "Typography MUST be Fredoka for Display (Headings, large titles, empty state text) and Nunito for text (body, labels, chat bubbles).",
+    "Keep touch targets chunky (minimum 44x44pt, preferably 56pt height for list rows). Use 'pill' shapes for buttons and primary actions.",
+    "Implement the haptics precisely as described in the 'haptics' block. This is critical for the tactile feel of the app.",
+    "For the avatar randomization, use the 3D abstract avatar images provided in the guidelines to give the 'BlueTiger42' style anonymity.",
+    "Ensure every elevated surface like the bottom tab bar and sticky headers utilizes the specified glassmorphism setup (expo-glass-effect or expo-blur over tinted bg).",
+    "Add a gradient scrim behind text overlaid on imagery (e.g., Profile cover banner).",
+    "Do NOT use emojis in system UI or navigation. Use Phosphor icons (filled).",
+    "Since UPES Dehradun logo extraction wasn't clear, use 'UPES' initialized beautifully in a brandTertiary (Mint) tinted pill/circle for the college selector card if a real logo isn't supplied by user later."
+  ]
+}
