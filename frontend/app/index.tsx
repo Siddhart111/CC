@@ -1,16 +1,47 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
 
 import { useAuth } from "@/src/lib/auth-context";
-import { spacing, useTheme } from "@/src/lib/theme";
+import { spacing } from "@/src/lib/theme";
 
 const CC_LOGO = require("../assets/cc-logo.png");
+const BG = "#08070C";
+const GLOW = "rgba(168, 85, 247, 0.55)";
+const ACCENT = "#C084FC";
 
 export default function Index() {
   const { user, loading } = useAuth();
-  const { colors } = useTheme();
   const router = useRouter();
+
+  // Subtle entrance + pulse
+  const fade = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.85)).current;
+  const pulse = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 6, tension: 60, useNativeDriver: true }),
+    ]).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0.6,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [fade, scale, pulse]);
 
   useEffect(() => {
     if (loading) return;
@@ -18,19 +49,142 @@ export default function Index() {
     else router.replace("/(auth)/welcome");
   }, [user, loading, router]);
 
+  const glowScale = pulse.interpolate({ inputRange: [0.6, 1], outputRange: [1, 1.18] });
+  const glowOpacity = pulse.interpolate({ inputRange: [0.6, 1], outputRange: [0.35, 0.7] });
+
   return (
-    <View style={[styles.container, { backgroundColor: "#0E0F12" }]} testID="splash-screen">
-      <Image source={CC_LOGO} style={styles.logo} resizeMode="contain" />
-      <Text style={[styles.title, { color: "#F5F4EE" }]}>Campus Chat</Text>
-      <Text style={[styles.subtitle, { color: "#9C9A92" }]}>Anonymous. Campus only.</Text>
-      <ActivityIndicator size="small" color={colors.brand} style={{ marginTop: spacing.xl }} />
+    <View style={styles.container} testID="splash-screen">
+      {/* Subtle radial-ish backdrop via two stacked gradients */}
+      <LinearGradient
+        colors={["#1A0E2A", BG, BG]}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={[`${ACCENT}22`, "transparent"]}
+        start={{ x: 0.5, y: 0.4 }}
+        end={{ x: 0.5, y: 0.9 }}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <View style={styles.center}>
+        <Animated.View
+          style={[
+            styles.logoWrap,
+            { opacity: fade, transform: [{ scale }] },
+          ]}
+        >
+          {/* Pulsing glow under the logo */}
+          <Animated.View
+            style={[
+              styles.glow,
+              { opacity: glowOpacity, transform: [{ scale: glowScale }] },
+            ]}
+          />
+          <Image source={CC_LOGO} style={styles.logo} resizeMode="contain" />
+        </Animated.View>
+
+        <Animated.View style={{ opacity: fade, alignItems: "center", marginTop: spacing.xl }}>
+          <Text style={styles.title}>Campus Chat</Text>
+          <Text style={styles.subtitle}>Anonymous. Campus only.</Text>
+        </Animated.View>
+
+        {/* Dotted progress */}
+        <Animated.View style={[styles.dots, { opacity: fade }]}>
+          <DotLoader />
+        </Animated.View>
+      </View>
+
+      <Text style={styles.footer}>Created by Siddharth Nishad</Text>
+    </View>
+  );
+}
+
+function DotLoader() {
+  const a = useRef(new Animated.Value(0)).current;
+  const b = useRef(new Animated.Value(0)).current;
+  const c = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const make = (val: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(val, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(val, { toValue: 0, duration: 400, useNativeDriver: true }),
+          Animated.delay(400 - delay),
+        ]),
+      );
+    const anims = [make(a, 0), make(b, 150), make(c, 300)];
+    anims.forEach((x) => x.start());
+    return () => anims.forEach((x) => x.stop());
+  }, [a, b, c]);
+
+  const dot = (v: Animated.Value) => ({
+    opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }),
+    transform: [
+      { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) },
+      { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.1] }) },
+    ],
+  });
+
+  return (
+    <View style={dotStyles.row}>
+      <Animated.View style={[dotStyles.dot, dot(a)]} />
+      <Animated.View style={[dotStyles.dot, dot(b)]} />
+      <Animated.View style={[dotStyles.dot, dot(c)]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center" },
-  logo: { width: 140, height: 140, marginBottom: spacing.xl },
-  title: { fontSize: 32, fontWeight: "800" },
-  subtitle: { fontSize: 14, marginTop: spacing.sm },
+  container: { flex: 1, backgroundColor: BG },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.xl },
+  logoWrap: { alignItems: "center", justifyContent: "center" },
+  glow: {
+    position: "absolute",
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: GLOW,
+    shadowColor: ACCENT,
+    shadowOpacity: 1,
+    shadowRadius: 60,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  logo: { width: 220, height: 130 },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#F5F4EE",
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "#9C9A92",
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    fontWeight: "700",
+  },
+  dots: { marginTop: spacing.xxl },
+  footer: {
+    position: "absolute",
+    bottom: 36,
+    alignSelf: "center",
+    color: "#6B6B6B",
+    fontSize: 11,
+    letterSpacing: 1,
+    fontWeight: "700",
+  },
+});
+
+const dotStyles = StyleSheet.create({
+  row: { flexDirection: "row", gap: 10 },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: ACCENT,
+  },
 });
