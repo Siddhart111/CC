@@ -22,6 +22,16 @@ export default function Profile() {
 
   if (!user) return null;
 
+  const shufflePic = async () => {
+    setSaving(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const updated = await api.patch("/profile", { profile_pic: pickRandomAvatar(user.profile_pic) });
+      setUser(updated);
+    } catch {}
+    setSaving(false);
+  };
+
   const uploadPic = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
@@ -103,7 +113,7 @@ export default function Profile() {
             <Text style={styles.cardLabel}>Status</Text>
             <View style={styles.statusDot}>
               <View style={styles.dotGreen} />
-              <Text style={styles.cardValue} numberOfLines={1}>Online</Text>
+              <Text style={styles.cardValue}>Online</Text>
             </View>
           </View>
         </View>
