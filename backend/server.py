@@ -25,7 +25,7 @@ from firebase_admin import credentials, firestore
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-_URL = os.environ["MONGO_URL"]
+MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
 JWT_SECRET = os.environ.get("JWT_SECRET", "campus-chat-dev-secret-change-me")
 JWT_ALGO = "HS256"
