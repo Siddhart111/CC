@@ -113,7 +113,9 @@ export default function Profile() {
             <Text style={styles.cardLabel}>Status</Text>
             <View style={styles.statusDot}>
               <View style={styles.dotGreen} />
-              <Text style={styles.cardValue}>Online</Text>
+              <Text style={[styles.cardValue, { maxWidth: undefined }]} numberOfLines={1}>
+                Online
+              </Text>
             </View>
           </View>
         </View>
@@ -264,7 +266,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   cardLabel: { fontSize: 14, color: colors.onSurfaceMuted, fontWeight: "600" },
   cardValue: { fontSize: 14, color: colors.onSurface, fontWeight: "700", maxWidth: "60%" },
-  statusDot: { flexDirection: "row", alignItems: "center", gap: 8 },
+  statusDot: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 },
   dotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
   privacyText: { fontSize: 13, color: colors.onSurfaceMuted, lineHeight: 20 },
   logoutBtn: {
