@@ -19,8 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
-import firebase_admin
-from firebase_admin import credentials, firestore
+
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -40,9 +39,7 @@ client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
 
 app = FastAPI(title="MONGOCampus Chat API")
-cred = credentials.Certificate("firebase-key.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -206,7 +203,6 @@ class WSManager:
 ws_manager = WSManager()
 
 
-# --- Resend email helper ---
 # --- Gmail SMTP email helper ---
 def send_email_resend(to_email: str, subject: str, html: str, text: str) -> bool:
     try:
@@ -226,36 +222,6 @@ def send_email_resend(to_email: str, subject: str, html: str, text: str) -> bool
         return True
     except Exception as e:
         logger.error(f"SMTP send failed for {to_email}: {e}")
-        return False
-    """Send an email via Resend HTTP API. Returns True on success, False otherwise.
-    If SMTP_USER is not configured, logs the message and returns False so callers
-    can fall back to dev mode (returning the OTP in the response)."""
-    if not SMTP_USER:
-        logger.warning(f"[DEV] No SMTP_USER set. Would have sent to {to_email}: {subject}")
-        return False
-    body = pyjson.dumps(
-        {"from": RESEND_FROM, "to": [to_email], "subject": subject, "html": html, "text": text}
-    ).encode("utf-8")
-    req = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=body,
-        headers={
-            "Authorization": f"Bearer {SMTP_USER}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        # Run blocking call off the event loop
-        loop = asyncio.get_event_loop()
-        def _do():
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                return resp.status
-        # Synchronous fallback (call directly; small payload, fast)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return 200 <= resp.status < 300
-    except Exception as e:
-        logger.error(f"Resend send failed for {to_email}: {e}")
         return False
 
 
@@ -424,7 +390,6 @@ async def search_users(q: str = "", current=Depends(get_current_user)):
     if q:
         query["anon_username"] = {"$regex": q, "$options": "i"}
     users = await db.users.find(query, {"_id": 0, "password_hash": 0, "email": 0}).limit(50).to_list(50)
-    # mark friendship status
     my_id = current["user_id"]
     fs = await db.friendships.find(
         {"$or": [{"requester_id": my_id}, {"recipient_id": my_id}]}, {"_id": 0}
@@ -547,7 +512,6 @@ async def list_chats(current=Depends(get_current_user)):
             members_count = await db.chat_members.count_documents({"chat_id": c["chat_id"]})
             meta["members_count"] = members_count
         else:
-            # DM - resolve the other user
             mems = await db.chat_members.find({"chat_id": c["chat_id"]}, {"_id": 0}).to_list(10)
             other = next((m for m in mems if m["user_id"] != my_id), None)
             if other:
@@ -559,7 +523,6 @@ async def list_chats(current=Depends(get_current_user)):
                     meta["profile_pic"] = other_user.get("profile_pic")
                     meta["other_user_id"] = other_user["user_id"]
         result.append(meta)
-    # sort by last message time desc
     result.sort(key=lambda x: (x.get("last_message") or {}).get("created_at", ""), reverse=True)
     return result
 
@@ -590,7 +553,6 @@ async def get_messages(chat_id: str, current=Depends(get_current_user)):
     if not membership:
         raise HTTPException(status_code=403, detail="Not a member of this chat")
     msgs = await db.messages.find({"chat_id": chat_id}, {"_id": 0}).sort("created_at", 1).to_list(500)
-    # enrich sender info
     sender_ids = list({m["sender_id"] for m in msgs})
     users = await db.users.find(
         {"user_id": {"$in": sender_ids}}, {"_id": 0, "password_hash": 0, "email": 0}
@@ -619,7 +581,6 @@ async def send_message(chat_id: str, req: SendMessageReq, current=Depends(get_cu
     await db.messages.insert_one(dict(msg))
     msg.pop("_id", None)
     msg["sender"] = {"anon_username": current["anon_username"], "profile_pic": current.get("profile_pic")}
-    # broadcast to chat members
     members = await db.chat_members.find({"chat_id": chat_id}, {"_id": 0}).to_list(2000)
     member_ids = [m["user_id"] for m in members]
     await ws_manager.send_to_users(member_ids, {"type": "message", "chat_id": chat_id, "message": msg})
@@ -742,8 +703,8 @@ async def delete_confession(confession_id: str, current=Depends(get_current_user
     return {"ok": True}
 
 
-# ---  endpoint ---
-@app.websocketWebSocket("/api/ws")
+# --- WebSocket endpoint ---
+@app.websocket("/api/ws")
 async def websocket_endpoint(websocket: WebSocket, token: str):
     user_id = decode_token(token)
     if not user_id:
@@ -770,7 +731,6 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 # --- Startup seed ---
 @app.on_event("startup")
 async def startup():
-    # indexes
     await db.users.create_index("user_id", unique=True)
     await db.users.create_index("email", unique=True)
     await db.friendships.create_index("request_id", unique=True)
@@ -780,7 +740,6 @@ async def startup():
     await db.confessions.create_index("confession_id", unique=True)
     await db.confessions.create_index([("college_id", 1), ("created_at", -1)])
     await db.email_otps.create_index("email", unique=True)
-    # seed UPES Lounge (idempotent rename: ensure title is short college code, e.g. "UPES")
     for c in COLLEGES:
         await db.chats.update_one(
             {"chat_id": c["lounge_id"]},
