@@ -188,5 +188,3 @@ const dotStyles = StyleSheet.create({
     backgroundColor: ACCENT,
   },
 });
-
-});
