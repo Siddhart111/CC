@@ -7,6 +7,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { radius, spacing, useTheme } from "@/src/lib/theme";
 
+const CC_LOGO = require("../../assets/cc-logo.png");
+const WELCOME_HERO = "https://images.unsplash.com/photo-1513906029980-32d13afe6d8c?w=1200&q=80";
+
 export default function Welcome() {
   const router = useRouter();
   const { colors, effective } = useTheme();
@@ -14,23 +17,15 @@ export default function Welcome() {
   const scrim =
     effective === "dark"
       ? (["rgba(14,15,18,0.2)", "rgba(14,15,18,0.85)", colors.surface] as const)
-      : (["rgba(253,252,248,0.1)", "rgba(253,252,248,0.85)", colors.surface] as const);
+      : (["rgba(253,252,248,0.15)", "rgba(253,252,248,0.85)", colors.surface] as const);
   return (
     <View style={styles.container} testID="welcome-screen">
-      <Image
-        source={{ uri: "https://images.unsplash.com/photo-1517256673644-36ad11246d21?w=1200&q=80" }}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-      />
-      <LinearGradient
-        colors={scrim}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      <Image source={{ uri: WELCOME_HERO }} style={StyleSheet.absoluteFill} contentFit="cover" />
+      <LinearGradient colors={scrim} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <View style={styles.topRow}>
           <View style={styles.logoChip}>
-            <Text style={styles.logoChipText}>CC</Text>
+            <Image source={CC_LOGO} style={styles.logoImg} contentFit="contain" />
           </View>
           <Text style={styles.brand}>Campus Chat</Text>
         </View>
@@ -77,13 +72,15 @@ const makeStyles = (colors: any) => StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: spacing.xl, justifyContent: "space-between" },
   topRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.sm },
   logoChip: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: radius.lg,
-    backgroundColor: colors.brand,
+    backgroundColor: "#0E0F12",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
+  logoImg: { width: 40, height: 40 },
   logoChipText: { color: colors.onBrandPrimary, fontWeight: "800", fontSize: 18 },
   brand: { fontSize: 20, fontWeight: "800", color: colors.onSurface },
   heroBlock: { gap: spacing.md },

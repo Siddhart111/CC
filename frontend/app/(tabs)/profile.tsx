@@ -75,7 +75,7 @@ export default function Profile() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <View style={styles.coverWrap}>
           <Image
-            source={{ uri: "https://images.unsplash.com/photo-1517256673644-36ad11246d21?w=1200&q=80" }}
+            source={{ uri: "https://images.unsplash.com/photo-1513906029980-32d13afe6d8c?w=1200&q=80" }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
           />
